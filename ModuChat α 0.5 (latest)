@@ -1,0 +1,143 @@
+# ModuChat - Chatbot en interface console - Version α 0.5
+# Créé par BitForge Studio
+import sys
+import time
+from datetime import datetime
+import random
+
+# Variables globales
+user_name = "User"
+conversation_context = []  # Liste pour stocker les derniers échanges (input + réponse)
+
+# Dictionnaire de commandes pour modularité
+commands = {
+    "hello": ["hello", "hi", "salut"],
+    "how_are_you": ["how are you", "comment vas-tu"],
+    "bye": ["bye", "exit", "au revoir"],
+    "help": ["help", "aide"],
+    "time": ["time", "heure"],
+    "date": ["date"],
+    "info": ["info"],
+    "setname": ["setname"],
+    "calc": ["calc"]
+}
+
+# Fonction pour vérifier si une commande est présente
+def match_command(user_input, command_list):
+    return any(cmd in user_input for cmd in command_list)
+
+# Fonction pour les réponses du bot
+def get_response(user_input):
+    global user_name, conversation_context
+    user_input = user_input.lower().strip()
+
+    # Ignorer les entrées vides
+    if not user_input:
+        return f"Hey {user_name}, you didn’t say anything! What’s up?"
+
+    # Ajouter au contexte (limité à 5 derniers échanges pour ne pas surcharger)
+    if len(conversation_context) >= 10:  # 5 entrées + 5 réponses = 10 lignes
+        conversation_context.pop(0)
+    conversation_context.append(f"You: {user_input}")
+
+    # Réponses avec variations
+    hello_replies = [
+        f"Hey {user_name}, nice to see you! What’s on your mind?",
+        f"Hi {user_name}! How can I make your day even better?",
+        f"Hello {user_name}! What’s up?"
+    ]
+    how_are_you_replies = [
+        f"I’m doing awesome, thanks for asking, {user_name}! How about you?",
+        f"Great, as always! How’s {user_name} holding up?",
+        f"I’m good, {user_name}! What’s your vibe today?"
+    ]
+    bye_replies = [
+        f"See ya, {user_name}! Come back soon, okay?",
+        f"Goodbye {user_name}, it’s been real!",
+        f"Catch you later, {user_name}!"
+    ]
+
+    # Gestion des commandes
+    if match_command(user_input, commands["hello"]):
+        response = random.choice(hello_replies)
+    elif match_command(user_input, commands["how_are_you"]):
+        response = random.choice(how_are_you_replies)
+    elif match_command(user_input, commands["bye"]):
+        response = random.choice(bye_replies)
+    elif match_command(user_input, commands["help"]):
+        response = f"I’m ModuChat α 0.5, by BitForge Studio. Try 'hello', 'time', 'date', 'calc', 'setname', or just chat!"
+    elif match_command(user_input, commands["time"]):
+        response = f"Current time: {datetime.now().strftime('%H:%M:%S')}. What else you got, {user_name}?"
+    elif match_command(user_input, commands["date"]):
+        response = f"Current date: {datetime.now().strftime('%Y-%m-%d')}. Anything fun planned, {user_name}?"
+    elif match_command(user_input, commands["info"]):
+        response = f"ModuChat α 0.5 - Open-source by BitForge Studio. I’m here for you, {user_name}!"
+    elif match_command(user_input, commands["setname"]):
+        new_name = user_input.replace("setname", "").strip()
+        if not new_name:
+            new_name = input("Enter your name: ").strip() or "User"  # Retour à "User" si vide
+        user_name = new_name
+        response = f"Name set to {user_name}! How can I assist you now?"
+    elif match_command(user_input, commands["calc"]):
+        try:
+            expression = user_input.replace("calc", "").strip()
+            if not expression:
+                expression = input("Enter a simple calculation (e.g., 2 + 3): ").strip()
+            if not expression:
+                response = f"No calculation provided, {user_name}. Try 'calc 2 + 3'!"
+            else:
+                # Sécurité basique : limiter à des chiffres et opérateurs
+                if not all(c in "0123456789+-*/. " for c in expression):
+                    response = f"Sorry {user_name}, keep it simple with numbers and + - * / !"
+                else:
+                    result = eval(expression, {"__builtins__": None}, {"+": "+", "-": "-", "*": "*", "/": "/"})
+                    response = f"Result: {result}. Cool, right, {user_name}?"
+        except (SyntaxError, ZeroDivisionError, ValueError):
+            response = f"Oops, that didn’t work, {user_name}. Try 'calc 2 + 3' or something simple!"
+    # Réponses contextuelles
+    elif any("what" in ctx or "why" in ctx for ctx in conversation_context[-2:]):
+        response = f"Good question, {user_name}! I’d guess it’s all about perspective—what do you think?"
+    elif any("you" in ctx for ctx in conversation_context[-2:]):
+        response = f"Me? Just a friendly bot for {user_name}. What’s your story?"
+    # Réponses ouvertes
+    elif "yes" in user_input or "oui" in user_input:
+        response = f"Cool, {user_name}! Tell me more—what’s behind that 'yes'?"
+    elif "no" in user_input or "non" in user_input:
+        response = f"Okay, {user_name}, no worries. What’s on your mind instead?"
+    else:
+        generic_replies = [
+            f"Hmm, {user_name}, I’m not sure about that one. What do you like to talk about?",
+            f"Interesting! What’s next on your mind, {user_name}?",
+            f"You’ve got me curious, {user_name}. Care to elaborate?"
+        ]
+        response = random.choice(generic_replies)
+
+    # Ajouter la réponse au contexte
+    conversation_context.append(f"Bot: {response}")
+    return response
+
+def main():
+    print("=====================================")
+    print("Welcome to ModuChat α 0.5")
+    print("Created by BitForge Studio")
+    print("Type 'exit' or 'bye' to quit")
+    print("=====================================")
+
+    while True:
+        try:
+            user_input = input(f"{user_name}: ")
+            if user_input.lower() in commands["bye"]:
+                response = get_response(user_input)
+                print("Bot:", response)
+                break
+            response = get_response(user_input)
+            print("Bot:", response)
+            time.sleep(0.5)
+        except KeyboardInterrupt:
+            print("\nBot: Caught you sneaking out! Bye, {user_name}!")
+            break
+        except Exception as e:
+            print(f"Bot: Oops, something went wrong ({e}). Let’s keep chatting, {user_name}!")
+
+if __name__ == "__main__":
+    main()
